@@ -8,7 +8,7 @@ object main extends AntlrModule {
   def scalaVersion = "2.13.1"
 
   override def antlrGrammarSources = T.sources {
-    Seq(os.pwd).map(PathRef(_))
+    Seq(os.pwd/"grammar1.g4", os.pwd/"grammar2.g4").map(PathRef(_))
   }
 
   override def antlrPackage: Option[String] = Some("net.mlbox")
