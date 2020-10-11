@@ -12,7 +12,7 @@ object main extends AntlrModule {
     Seq(os.pwd).map(PathRef(_))
   }
 
-  override def antlrPackage: Option[String] = Some("com.company")
+  override def antlrPackage: Option[String] = Some("net.mlbox")
 
   override def antlrGenerateVisitor: Boolean = true
 

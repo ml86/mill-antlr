@@ -2,12 +2,46 @@ import mill._
 import mill.scalalib._
 import publish._
 
-object `mill-antlr` extends ScalaModule with PublishModule {
-  def scalaVersion = "2.13.1"
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest:0.3.3`
+import de.tobiasroeser.mill.integrationtest._
+
+import scala.collection.immutable.ListMap
+
+trait Deps {
+  def millVersion = "0.7.0"
+  def scalaVersion = "2.13.2"
+
+  val millMain = ivy"com.lihaoyi::mill-main:${millVersion}"
+  val millScalalib = ivy"com.lihaoyi::mill-scalalib:${millVersion}"
+}
+object Deps_0_7 extends Deps
+object Deps_0_6 extends Deps {
+  override def millVersion = "0.6.0"
+  override def scalaVersion = "2.12.10"
+}
+
+val millApiVersions: Map[String, Deps] = ListMap(
+  "0.7" -> Deps_0_7,
+  "0.6" -> Deps_0_6
+)
+
+val millItestVersions = Seq(
+  "0.7.4", "0.7.3", "0.7.2", "0.7.1", "0.7.0",
+  "0.6.3", "0.6.2", "0.6.1", "0.6.0"
+)
+
+object `mill-antlr` extends mill.Cross[`mill-antlrCross`](millApiVersions.keysIterator.toSeq: _*)
+class `mill-antlrCross`(val millApiVersion: String) extends CrossScalaModule with PublishModule {
+  def deps: Deps = millApiVersions(millApiVersion)
+  override def crossScalaVersion = deps.scalaVersion
+  override def compileIvyDeps = Agg(
+    deps.millMain,
+    deps.millScalalib,
+  )
+
   def millSourcePath = os.pwd
 
   def ivyDeps = Agg(
-    ivy"com.lihaoyi::mill-scalalib:0.8.0",
     ivy"org.antlr:antlr4:4.8-1",
   )
 
@@ -27,12 +61,10 @@ object `mill-antlr` extends ScalaModule with PublishModule {
   )
 }
 
-import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest:0.3.3`
-import de.tobiasroeser.mill.integrationtest._
-
-object itest extends MillIntegrationTestModule {
-
-  def millTestVersion = "0.7.4"
-
-  def pluginsUnderTest = Seq(`mill-antlr`)
+object itest extends Cross[ItestCross](millItestVersions: _*)
+class ItestCross(millItestVersion: String)  extends MillIntegrationTestModule {
+  val millApiVersion = millItestVersion.split("[.]").take(2).mkString(".")
+  override def millSourcePath: os.Path = super.millSourcePath / os.up
+  override def millTestVersion = millItestVersion
+  override def pluginsUnderTest = Seq(`mill-antlr`(millApiVersion))
 }
