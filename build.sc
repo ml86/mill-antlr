@@ -45,7 +45,7 @@ class `mill-antlrCross`(val millApiVersion: String) extends CrossScalaModule wit
     ivy"org.antlr:antlr4:4.8-1",
   )
 
-  def publishVersion = "0.0.1"
+  def publishVersion = "0.1.0"
 
   def artifactName = "mill-antlr"
  
