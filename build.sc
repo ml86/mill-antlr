@@ -37,7 +37,7 @@ class `mill-antlrCross`(val millBinaryVersion: String) extends ScalaModule with 
 
   def publishVersion = VcsVersion.vcsState().format()
 
-  def artifactName = "mill-antlr"
+  def artifactName = s"mill-antlr_mill$millBinaryVersion"
  
   def pomSettings = PomSettings(
     description = "Antlr support for mill builds.",
