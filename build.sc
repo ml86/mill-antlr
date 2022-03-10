@@ -2,41 +2,31 @@ import mill._
 import mill.scalalib._
 import publish._
 
-import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest:0.3.3`
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.4`
+import de.tobiasroeser.mill.vcs.version.VcsVersion
+
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.4.2`
 import de.tobiasroeser.mill.integrationtest._
 
 import scala.collection.immutable.ListMap
 
-trait Deps {
-  def millVersion = "0.7.0"
-  def scalaVersion = "2.13.2"
+val millVersions = Seq("0.9.3", "0.10.0")
+val millBinaryVersions = millVersions.map(millBinaryVersion)
 
-  val millMain = ivy"com.lihaoyi::mill-main:${millVersion}"
-  val millScalalib = ivy"com.lihaoyi::mill-scalalib:${millVersion}"
-}
-object Deps_0_7 extends Deps
-object Deps_0_6 extends Deps {
-  override def millVersion = "0.6.0"
-  override def scalaVersion = "2.12.10"
-}
-
-val millApiVersions: Map[String, Deps] = ListMap(
-  "0.7" -> Deps_0_7,
-  "0.6" -> Deps_0_6
-)
+def millBinaryVersion(millVersion: String) = millVersion.split('.').take(2).mkString(".")
+def millVersion(binaryVersion: String) =
+  millVersions.find(v => millBinaryVersion(v) == binaryVersion).get
 
 val millItestVersions = Seq(
-  "0.7.4", "0.7.3", "0.7.2", "0.7.1", "0.7.0",
-  "0.6.3", "0.6.2", "0.6.1", "0.6.0"
+  "0.9.12", "0.10.1"
 )
 
-object `mill-antlr` extends mill.Cross[`mill-antlrCross`](millApiVersions.keysIterator.toSeq: _*)
-class `mill-antlrCross`(val millApiVersion: String) extends CrossScalaModule with PublishModule {
-  def deps: Deps = millApiVersions(millApiVersion)
-  override def crossScalaVersion = deps.scalaVersion
+object `mill-antlr` extends mill.Cross[`mill-antlrCross`](millBinaryVersions: _*)
+class `mill-antlrCross`(val millBinaryVersion: String) extends ScalaModule with PublishModule {
+  override def scalaVersion = "2.13.8"
   override def compileIvyDeps = Agg(
-    deps.millMain,
-    deps.millScalalib,
+    ivy"com.lihaoyi::mill-main:${millVersion(millBinaryVersion)}",
+    ivy"com.lihaoyi::mill-scalalib:${millVersion(millBinaryVersion)}",
   )
 
   def millSourcePath = os.pwd
@@ -45,9 +35,9 @@ class `mill-antlrCross`(val millApiVersion: String) extends CrossScalaModule wit
     ivy"org.antlr:antlr4:4.8-1",
   )
 
-  def publishVersion = "0.1.0"
+  def publishVersion = VcsVersion.vcsState().format()
 
-  def artifactName = "mill-antlr"
+  def artifactName = s"mill-antlr_mill$millBinaryVersion"
  
   def pomSettings = PomSettings(
     description = "Antlr support for mill builds.",
@@ -63,8 +53,7 @@ class `mill-antlrCross`(val millApiVersion: String) extends CrossScalaModule wit
 
 object itest extends Cross[ItestCross](millItestVersions: _*)
 class ItestCross(millItestVersion: String)  extends MillIntegrationTestModule {
-  val millApiVersion = millItestVersion.split("[.]").take(2).mkString(".")
   override def millSourcePath: os.Path = super.millSourcePath / os.up
   override def millTestVersion = millItestVersion
-  override def pluginsUnderTest = Seq(`mill-antlr`(millApiVersion))
+  override def pluginsUnderTest = Seq(`mill-antlr`(millBinaryVersion(millItestVersion)))
 }
